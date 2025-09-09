@@ -1,0 +1,42 @@
+Anonymization Verification Report
+==================================================
+Generated: 2025-09-09 16:31:09
+
+OVERALL SUMMARY
+Files tested: 6
+Files passed all tests: 6/6
+
+
+exp-1-data-anonymized.json:
+  Participant count: 236 (matches original)
+  ✓ All PII fields removed
+  ✓ All required fields preserved
+
+exp-2-data-anonymized.json:
+  Participant count: 188 (matches original)
+  ✓ All PII fields removed
+  ✓ All required fields preserved
+
+exp-3-data-anonymized.json:
+  Participant count: 206 (matches original)
+  ✓ All PII fields removed
+  ✓ All required fields preserved
+
+exp-4-data-anonymized.json:
+  Participant count: 200 (matches original)
+  ✓ All PII fields removed
+  ✓ All required fields preserved
+
+exp-5-data-anonymized.json:
+  Participant count: 197 (matches original)
+  ✓ All PII fields removed
+  ✓ All required fields preserved
+
+exp-6-data-anonymized.json:
+  Participant count: 100 (matches original)
+  ✓ All PII fields removed
+  ✓ All required fields preserved
+
+==================================================
+✓ ALL TESTS PASSED - Anonymization successful!
+The anonymized datasets are ready for public release.

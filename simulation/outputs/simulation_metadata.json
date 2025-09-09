@@ -1,0 +1,47 @@
+{
+  "generation_info": {
+    "timestamp": "2025-09-09T16:25:21.666227",
+    "base_seed": 42,
+    "relevant_features": [
+      0,
+      1
+    ],
+    "dangerous_combination": [
+      1,
+      1
+    ],
+    "random_seed_info": "Single global seed used for entire simulation - all randomness proceeds sequentially"
+  },
+  "dataset_summary": {
+    "asocial": 250,
+    "2d": 250,
+    "1d_a": 250,
+    "1d_b": 250
+  },
+  "experimental_structure": {
+    "phase_0": "Training (64 trials) - individual learning for all",
+    "phase_1": "Test (32 trials) - individual learning for all",
+    "phase_2": "Training (64 trials) - condition-specific learning",
+    "phase_3": "Test (32 trials) - condition-specific learning"
+  },
+  "conditions": {
+    "asocial": "Solo learning continuation (phases 0-3)",
+    "2d": "Social learning with 2D partner (phases 0-3)",
+    "other-1d": "Social learning with other 1D partner (phases 0-3)"
+  },
+  "model_parameters": {
+    "c": 6,
+    "phi": 30,
+    "lambda_w": 0.15,
+    "lambda_alpha": 0.15
+  },
+  "environment_parameters": {
+    "num_features": 4,
+    "num_relevant_features": 2,
+    "reward_structure": {
+      "approach_safe": 1,
+      "approach_dangerous": -4,
+      "avoid": 0
+    }
+  }
+}

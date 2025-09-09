@@ -1,0 +1,55 @@
+DECISION RULE PROPORTIONS ANALYSIS
+==================================================
+Generated: 2025-09-09 16:25:33
+
+DESCRIPTION:
+--------------------
+This file contains proportions of decision rule usage (2d, 1d, neither) 
+across different experimental conditions and datasets for the dyadic 
+learning trap experiment, including simulated data.
+
+DATA STRUCTURE:
+--------------------
+- dataset: Dataset identifier (sim, 1-6)
+- condition: Experimental condition ('first', '2d', 'other_1d', 'asocial')
+- block: Block number within learning phases
+- prop_2d: Proportion using 2D decision rule (optimal)
+- prop_1d: Proportion using 1D decision rule
+- prop_neither: Proportion using neither rule consistently
+- N: Number of participants in this condition/dataset
+
+CONDITIONS:
+--------------------
+- first: First test phase (all participants)
+- asocial: Solo game participants who used 1D rule in first test
+- 2d: Duo game participants (1D in first test) paired with 2D partner
+- other_1d: Duo game participants paired with complementary 1D partner
+
+DATA SOURCES:
+--------------------
+Total data rows: 168
+
+DATA SUMMARY:
+--------------------
+Datasets analyzed: ['1', '2', '3', '4', '5', '6', 'sim']
+Conditions: ['2d', 'asocial', 'first', 'other_1d']
+Blocks per condition: 6
+
+PARTICIPANT COUNTS BY CONDITION:
+--------------------
+condition   2d  asocial  first  other_1d
+dataset                                 
+1           10       57    220         8
+2           27       19    184        24
+3           28       30    199        25
+4           25       19    192        32
+5           44        0    192        21
+6            0       32     93         0
+sim        159      152   1000       159
+
+SOURCE DATA:
+--------------------
+Players: 2080 participants (filtered, no external aid)
+Blocks: 25728 total blocks
+Input files: ../../preprocessing/outputs/players_df_all_filtered.csv,
+             ../../preprocessing/outputs/blocks_all_filtered.csv

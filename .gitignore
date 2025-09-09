@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+venv/
+env/
+ENV/
+.env
+
+# Data files - ignore raw unanonymized data, keep anonymized versions
+data/exp-1-data.json
+data/exp-2-data.json
+data/exp-3-data.json
+data/exp-4-data.json
+data/exp-5-data.json
+data/exp-6-data.json
+# Keep anonymized versions (exp-*-data-anonymized.json)
+
+# Output files (uncomment if outputs should be regenerated locally)
+# preprocessing/outputs/
+# results/*/outputs/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+temp/
+tmp/
+
+# AI development files
+CLAUDE.md

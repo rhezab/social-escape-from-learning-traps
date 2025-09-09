@@ -1,0 +1,32 @@
+Anonymization Report
+==================================================
+Generated: 2025-09-09 16:31:05
+
+
+exp-1:
+  Total participants: 236
+  Fields removed: browser_fingerprint, demographic_form.zipcode, recruitment_info.prolific_id
+
+exp-2:
+  Total participants: 188
+  Fields removed: browser_fingerprint, demographic_form.zipcode, recruitment_info.prolific_id
+
+exp-3:
+  Total participants: 206
+  Fields removed: browser_fingerprint, demographic_form.zipcode, recruitment_info.prolific_id
+
+exp-4:
+  Total participants: 200
+  Fields removed: browser_fingerprint, demographic_form.zipcode, recruitment_info.prolific_id
+
+exp-5:
+  Total participants: 197
+  Fields removed: browser_fingerprint, demographic_form.zipcode, recruitment_info.prolific_id
+
+exp-6:
+  Total participants: 100
+  Fields removed: browser_fingerprint, demographic_form.zipcode, recruitment_info.prolific_id
+
+==================================================
+Note: questionnaireQuestions (text responses about bee learning) have been
+preserved as they contain no sensitive information.
