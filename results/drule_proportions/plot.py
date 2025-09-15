@@ -391,8 +391,8 @@ def create_trapped_learner_comparison_plot(test_results_df):
             xtick_labels.append(f"{condition_labels[condition]}\n(N = {n})")
         
         # Customize the plot with larger font sizes
-        ax.set_xlabel('Test Phase: Partner', fontsize=16, labelpad=10)
-        ax.set_ylabel('Proportion', fontsize=16)
+        ax.set_xlabel('T1: Rule / T2: Partner', fontsize=14, labelpad=10)
+        ax.set_ylabel('Proportion', fontsize=14)
         ax.set_ylim(0, 1.1)  # Increased upper limit to provide space for asterisks
         # Create title with bolded panel letter
         panel_letter = chr(ord('A') + dataset_idx)
@@ -403,7 +403,7 @@ def create_trapped_learner_comparison_plot(test_results_df):
         title_with_panel = f'$\\mathbf{{{panel_letter}}}$: {dataset_title}'
         ax.set_title(title_with_panel, fontsize=18)
         ax.set_xticks(x)
-        ax.set_xticklabels(xtick_labels, fontsize=12)
+        ax.set_xticklabels(xtick_labels, fontsize=16)
         ax.tick_params(axis='y', labelsize=14)
         ax.grid(True, alpha=0.3)
         
