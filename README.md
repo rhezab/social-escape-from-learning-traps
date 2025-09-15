@@ -15,6 +15,16 @@ social-escape-learning-traps/
 
 See individual folder READMEs for detailed documentation of each component.
 
+## Paper figures
+
+| Figure | Description | File Path |
+|--------|-------------|-----------|
+| Figure 2 | Decision rule distribution after initial individual learning phase. | `./results/drule_proportions/outputs/first_test_overview.pdf` |
+| Figure 3 | Decision rule distribution for trapped learners after second learning phase.  | `./results/drule_proportions/outputs/trapped_learner_comparison.pdf` |
+| Figure 4 | Exploration approach bad/good heatmaps for trapped learners who learned optimal rule during second learning phase. | `./results/reward_punishment_heatmap/outputs/trapped_to_optimal_grid.pdf` |
+| Figure 5 | Effect of social decision rule inference success on observational learning success. | `./results/partner_prediction/outputs/partner_prediction_combined_figure.pdf` |
+| Figure 6 | Decision rule distributions for each learning and test block, by second learning phase condition. | `./results/drule_proportions/outputs/drule-proportions-bar-plot.pdf` |
+
 ## Root Level Files
 
 ### Core Pipeline
@@ -79,16 +89,6 @@ Raw JSON → Preprocessing → Filtered CSVs → Individual Analyses → Figures
  release.**
 
 This repository contains anonymized experimental data. The original raw data (containing personally identifiable information) has been processed through an anonymization pipeline that:
-
-### Removed Fields
-- **Browser fingerprints** (IP addresses, user agents, browser info)
-- **Recruitment identifiers** (Prolific IDs, session IDs, study IDs) 
-- **ZIP codes** (directly identifying demographic information)
-
-### Preserved Fields
-- **Demographics** (age, gender, race, education, income, country - except ZIP codes)
-- **Timestamps** (useful for analysis, not personally identifying)
-- **All task data** (trials, responses, performance metrics)
 
 ## Dependencies
 
