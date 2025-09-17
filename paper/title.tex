@@ -1,0 +1,60 @@
+\documentclass[11pt]{article} % For LaTeX2e
+\usepackage{palatino}
+\usepackage{graphicx}
+\usepackage{svg}
+\usepackage{amsmath}
+\usepackage{soul}
+\usepackage{color}
+\usepackage{pslatex}
+\usepackage{apacite}
+\usepackage{float} % Roger Levy added this and changed figure/table
+                   % placement to [H] for conformity to Word template,
+                   % though floating tables and figures to top is
+                   % still generally recommended!
+\usepackage{url}
+
+\usepackage[colorinlistoftodos]{todonotes}
+
+% \usepackage{cogsci}
+
+\usepackage{setspace}
+\doublespacing
+
+\newcommand{\detailtexcount}[1]{%
+  \immediate\write18{texcount -merge -sum -q #1.tex output.bbl > #1.wcdetail }%
+  \verbatiminput{#1.wcdetail}%
+}
+
+\newcommand{\quickwordcount}[1]{%
+  \immediate\write18{texcount -1 -sum -merge -q #1.tex output.bbl > #1-words.sum }%
+  \textbf{Word count:} \input{#1-words.sum}%
+}
+
+%   -sum, -sum=   Make sum of all word and equation counts. May also use
+%              -sum=#[,#] with up to 7 numbers to indicate how each of the
+%              counts (text words, header words, caption words, #headers,
+%              #floats, #inlined formulae, #displayed formulae) are summed.
+%              The default sum (if only -sum is used) is the same as
+%              -sum=1,1,1,0,0,1,1.
+
+
+\newcommand{\quickcharcount}[1]{%
+  \immediate\write18{texcount -1 -sum -merge -char -q #1.tex output.bbl > #1-chars.sum }%
+  \input{#1-chars.sum} characters (not including spaces)%
+}
+
+
+\title{Decision rule inference limits social escape from learning traps}
+
+\author{
+{Rheza Budiono (rheza@nyu.edu)}\\
+{Catherine A. Hartley (cate@nyu.edu)}\\ 
+{Todd M. Gureckis (todd.gureckis@nyu.edu)} \\
+  Department of Psychology, 6 Washington Pl \\
+  New York, NY 10003 USA
+}
+
+\begin{document}
+\maketitle
+\textbf{Word count: } 8813
+\end{document}

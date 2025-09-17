@@ -53,3 +53,42 @@ tmp/
 
 # AI development files
 CLAUDE.md
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.idx
+*.ind
+*.ilg
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.xdv
+
+# LaTeX intermediate files
+*.dvi
+*.ps
+
+# Bibtex
+*.bib.bak
+*.bib~
+
+# Latexmk
+*.latexmk
+
+# SyncTeX
+*.synctex.gz(busy)
+
+# PDF build artifacts (comment out if you want to track final PDFs)
+# *.pdf
