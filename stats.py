@@ -87,3 +87,56 @@ def bootstrap_proportion_ci(successes, total, confidence_level=0.95, n_bootstrap
     upper_ci = np.percentile(bootstrap_proportions, upper_percentile)
     
     return lower_ci, upper_ci
+
+
+def bootstrap_simultaneous_proportion_cis(counts, confidence_level=0.95, n_bootstraps=10000):
+    """
+    Calculate Bonferroni-corrected bootstrap confidence intervals for multiple proportions 
+    from multinomial data.
+    
+    Args:
+        counts: array-like of category counts (e.g., [count_2d, count_1d, count_neither])
+        confidence_level: overall confidence level (default 0.95)
+        n_bootstraps: number of bootstrap iterations (default 10000)
+        
+    Returns:
+        list of tuples: [(lower_ci, upper_ci), ...] for each category
+    """
+    counts = np.array(counts)
+    n_total = counts.sum()
+    n_categories = len(counts)
+    
+    if n_total == 0:
+        return [(None, None)] * n_categories
+    
+    # Original proportions
+    original_props = counts / n_total
+    
+    # Bonferroni correction: adjust alpha for multiple comparisons
+    # Only count independent proportions (k-1 for k categories due to sum constraint)
+    k_independent = n_categories - 1
+    alpha_total = 1 - confidence_level
+    alpha_individual = alpha_total / k_independent
+    
+    # Calculate percentile levels for individual CIs
+    lower_percentile = (alpha_individual / 2) * 100
+    upper_percentile = (1 - alpha_individual / 2) * 100
+    
+    # Bootstrap resample
+    bootstrap_props = []
+    for _ in range(n_bootstraps):
+        # Multinomial resample maintaining the constraint that proportions sum to 1
+        boot_counts = np.random.multinomial(n_total, original_props)
+        boot_props = boot_counts / n_total
+        bootstrap_props.append(boot_props)
+    
+    bootstrap_props = np.array(bootstrap_props)
+    
+    # Calculate simultaneous confidence intervals
+    simultaneous_cis = []
+    for i in range(n_categories):
+        lower_ci = np.percentile(bootstrap_props[:, i], lower_percentile)
+        upper_ci = np.percentile(bootstrap_props[:, i], upper_percentile)
+        simultaneous_cis.append((lower_ci, upper_ci))
+    
+    return simultaneous_cis

@@ -6,9 +6,9 @@ from datetime import datetime
 # Add parent directory to path to import global constants
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from constants import ALL_DATASETS
-from stats import permutation_test_proportion
+from stats import permutation_test_proportion, bootstrap_simultaneous_proportion_cis
 
-def test_drule_proportions_per_dataset(df_all, condition, dataset):
+def test_drule_proportions_per_dataset(df_all, condition, dataset, calculate_cis=True):
     # Apply condition masks (same as original)
     if condition == 'first':
         cond_mask = pd.Series(True, index=df_all.index)
@@ -44,30 +44,65 @@ def test_drule_proportions_per_dataset(df_all, condition, dataset):
             counts = participants[test_col].value_counts()
             total = len(participants)
             
-            # Calculate proportions based on column type
+            # Calculate counts and proportions based on column type
             if '_gen' in test_col:
                 # For generalized columns: 2d, 1d, neither
-                prop_2d = counts.get('2d', 0) / total
-                prop_1d = counts.get('1d', 0) / total
-                prop_neither = counts.get('neither', 0) / total
+                count_2d = counts.get('2d', 0)
+                count_1d = counts.get('1d', 0)
+                count_neither = counts.get('neither', 0)
             else:
                 # For non-generalized columns: 1d_a, 1d_b, 2d, neither
                 # Combine 1d_a and 1d_b into 1d
-                prop_2d = counts.get('2d', 0) / total
-                prop_1d = (counts.get('1d_a', 0) + counts.get('1d_b', 0)) / total
-                prop_neither = counts.get('neither', 0) / total
+                count_2d = counts.get('2d', 0)
+                count_1d = counts.get('1d_a', 0) + counts.get('1d_b', 0)
+                count_neither = counts.get('neither', 0)
+            
+            prop_2d = count_2d / total
+            prop_1d = count_1d / total
+            prop_neither = count_neither / total
+            
+            # Calculate confidence intervals if requested
+            if calculate_cis:
+                ci_counts = [count_2d, count_1d, count_neither]
+                cis = bootstrap_simultaneous_proportion_cis(
+                    counts=ci_counts,
+                    confidence_level=0.95,
+                    n_bootstraps=10000
+                )
+                
+                # Store CI bounds (cis = [(ci_2d), (ci_1d), (ci_neither)])
+                ci_2d_lower = cis[0][0] if cis[0][0] is not None else 0
+                ci_2d_upper = cis[0][1] if cis[0][1] is not None else 0
+                ci_1d_lower = cis[1][0] if cis[1][0] is not None else 0
+                ci_1d_upper = cis[1][1] if cis[1][1] is not None else 0
+                ci_neither_lower = cis[2][0] if cis[2][0] is not None else 0
+                ci_neither_upper = cis[2][1] if cis[2][1] is not None else 0
+            else:
+                ci_2d_lower = ci_2d_upper = ci_1d_lower = ci_1d_upper = ci_neither_lower = ci_neither_upper = None
         else:
-            prop_2d = 0
-            prop_1d = 0
-            prop_neither = 0
+            prop_2d = prop_1d = prop_neither = 0
+            ci_2d_lower = ci_2d_upper = ci_1d_lower = ci_1d_upper = ci_neither_lower = ci_neither_upper = None
         
-        results.append({
+        result_dict = {
             'test_phase_type': phase_type,
             'prop_2d': prop_2d,
             'prop_1d': prop_1d,
             'prop_neither': prop_neither,
             'N': N
-        })
+        }
+        
+        # Add CI data if calculated
+        if calculate_cis:
+            result_dict.update({
+                'ci_2d_lower': ci_2d_lower,
+                'ci_2d_upper': ci_2d_upper,
+                'ci_1d_lower': ci_1d_lower,
+                'ci_1d_upper': ci_1d_upper,
+                'ci_neither_lower': ci_neither_lower,
+                'ci_neither_upper': ci_neither_upper
+            })
+        
+        results.append(result_dict)
     
     return results
 
@@ -226,8 +261,11 @@ def main():
     print(f"Datasets: {sorted(players_df['dataset'].unique())}")
     print(f"Participants per dataset: \n{players_df['dataset'].value_counts().sort_index()}")
     
-    # Initialize results dataframe with all columns
-    results_df = pd.DataFrame(columns=['dataset', 'condition', 'test_phase_type', 'prop_2d', 'prop_neither', 'prop_1d', 'N'])
+    # Initialize results dataframe with all columns including CIs
+    results_df = pd.DataFrame(columns=[
+        'dataset', 'condition', 'test_phase_type', 'prop_2d', 'prop_neither', 'prop_1d', 'N',
+        'ci_2d_lower', 'ci_2d_upper', 'ci_1d_lower', 'ci_1d_upper', 'ci_neither_lower', 'ci_neither_upper'
+    ])
     
     print("\nCalculating test proportions for each dataset and condition...")
     
@@ -236,11 +274,16 @@ def main():
         print(f"  Processing dataset {dataset}...")
         # Get proportions for each condition and store in dataframe
         for condition in ['first', '2d', 'other_1d', 'asocial']:
-            results = test_drule_proportions_per_dataset(players_df, condition, dataset)
+            results = test_drule_proportions_per_dataset(
+                df_all=players_df, 
+                condition=condition, 
+                dataset=dataset, 
+                calculate_cis=True
+            )
             
             # Add rows for each test phase type
             for result in results:
-                results_df.loc[len(results_df)] = {
+                row_dict = {
                     'dataset': dataset,
                     'condition': condition,
                     'test_phase_type': result['test_phase_type'],
@@ -249,6 +292,19 @@ def main():
                     'prop_1d': result['prop_1d'],
                     'N': result['N']
                 }
+                
+                # Add CI data if available
+                if 'ci_2d_lower' in result:
+                    row_dict.update({
+                        'ci_2d_lower': result['ci_2d_lower'],
+                        'ci_2d_upper': result['ci_2d_upper'],
+                        'ci_1d_lower': result['ci_1d_lower'],
+                        'ci_1d_upper': result['ci_1d_upper'],
+                        'ci_neither_lower': result['ci_neither_lower'],
+                        'ci_neither_upper': result['ci_neither_upper']
+                    })
+                
+                results_df.loc[len(results_df)] = row_dict
     
     # Add p-value columns comparing each condition to asocial control
     print("\nCalculating p-values vs asocial control...")
@@ -373,15 +429,26 @@ def main():
             phase_data = results_df[results_df['test_phase_type'] == phase_type]
             
             if len(phase_data) > 0:
-                f.write("| Dataset | Condition | 2D | 1D | Neither | N | p(2D) | p(1D) | p(Neither) |\n")
-                f.write("|---------|-----------|----|----|---------|----|---------|---------|-----------|\n")
+                f.write("| Dataset | Condition | 2D [CI] | 1D [CI] | Neither [CI] | N | p(2D) | p(1D) | p(Neither) |\n")
+                f.write("|---------|-----------|---------|---------|-------------|----|---------|---------|-----------|\n")
                 
                 for _, row in phase_data.iterrows():
                     dataset = row['dataset']
                     condition = row['condition']
+                    
+                    # Format proportions with confidence intervals
                     prop_2d = f"{row['prop_2d']:.3f}"
+                    if pd.notna(row['ci_2d_lower']) and pd.notna(row['ci_2d_upper']):
+                        prop_2d += f" [{row['ci_2d_lower']:.3f}, {row['ci_2d_upper']:.3f}]"
+                    
                     prop_1d = f"{row['prop_1d']:.3f}"
+                    if pd.notna(row['ci_1d_lower']) and pd.notna(row['ci_1d_upper']):
+                        prop_1d += f" [{row['ci_1d_lower']:.3f}, {row['ci_1d_upper']:.3f}]"
+                    
                     prop_neither = f"{row['prop_neither']:.3f}"
+                    if pd.notna(row['ci_neither_lower']) and pd.notna(row['ci_neither_upper']):
+                        prop_neither += f" [{row['ci_neither_lower']:.3f}, {row['ci_neither_upper']:.3f}]"
+                    
                     n = row['N']
                     
                     # Format p-values (will show N/A for asocial condition)
@@ -495,6 +562,9 @@ def main():
         f.write("- **prop_1d**: Proportion using 1D decision rule\n")
         f.write("- **prop_neither**: Proportion using neither rule consistently\n")
         f.write("- **N**: Number of participants in this condition/dataset\n")
+        f.write("- **ci_2d_lower/upper**: 95% confidence interval bounds for 2D proportion\n")
+        f.write("- **ci_1d_lower/upper**: 95% confidence interval bounds for 1D proportion\n")
+        f.write("- **ci_neither_lower/upper**: 95% confidence interval bounds for neither proportion\n")
         f.write("- **p_vs_asocial_2d**: P-value comparing 2D proportion to asocial control\n")
         f.write("- **p_vs_asocial_1d**: P-value comparing 1D proportion to asocial control\n")
         f.write("- **p_vs_asocial_neither**: P-value comparing neither proportion to asocial control\n\n")
@@ -532,7 +602,30 @@ def main():
         f.write(f"- **Participants**: {len(players_df)} (filtered, no external aid)\n")
         f.write("- **Input file**: `../../preprocessing/outputs/players_df_all_filtered.csv`\n")
         f.write("- **Note**: Uses participant-level test decision rule columns directly\n")
-        f.write("- **Output file**: `test_decision_rule_proportions.csv`\n")
+        f.write("- **Output file**: `test_decision_rule_proportions.csv`\n\n")
+        
+        f.write("### Confidence Intervals\n\n")
+        f.write("- **Method**: 95% simultaneous confidence intervals using bootstrap (10,000 iterations)\n")
+        f.write("- **Correction**: Bonferroni correction for multiple comparisons (k-1 = 2 independent proportions)\n")
+        f.write("- **Resampling**: Multinomial resampling preserves sum-to-1 constraint\n\n")
+        
+        f.write("#### Sample CI Values (sim dataset, 2d condition, second_gen phase):\n")
+        sample_data = results_df[
+            (results_df['dataset'] == 'sim') & 
+            (results_df['condition'] == '2d') & 
+            (results_df['test_phase_type'] == 'second_gen')
+        ]
+        if len(sample_data) > 0:
+            row = sample_data.iloc[0]
+            prop_2d = row['prop_2d']
+            ci_2d_lower = row['ci_2d_lower']
+            ci_2d_upper = row['ci_2d_upper']
+            prop_1d = row['prop_1d']
+            ci_1d_lower = row['ci_1d_lower']
+            ci_1d_upper = row['ci_1d_upper']
+            n = int(row['N'])
+            f.write(f"- **N={n}**: 2D={prop_2d:.3f} [{ci_2d_lower:.3f}, {ci_2d_upper:.3f}], ")
+            f.write(f"1D={prop_1d:.3f} [{ci_1d_lower:.3f}, {ci_1d_upper:.3f}]\n")
     
     print(f"Saved documentation to {doc_file}")
     print(f"\nAnalysis complete! Generated {len(results_df)} rows of test proportion data.")

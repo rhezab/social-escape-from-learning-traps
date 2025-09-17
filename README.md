@@ -101,3 +101,4 @@ Standard Python data science stack:
 
 This analysis pipeline was developed with assistance from Claude Code (Anthropic). 
 Files with more wholesale Claude generated code are marked with authorship comments at the top of the file.
+I have reviewed all code and assume full responsibility for its correctness. 

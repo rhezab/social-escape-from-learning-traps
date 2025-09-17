@@ -8,7 +8,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from constants import PUBLICATION_DATASETS
 
-def plot_stacked_proportions(prop_2d, prop_neither, prop_1d, title, ax=None, show_legend=True):
+def plot_stacked_proportions(prop_2d, prop_neither, prop_1d, title, ax=None, show_legend=True, 
+                           ci_2d=None, ci_1d=None):
     """
     Create a stacked bar plot showing proportions of decision rule usage across blocks.
     
@@ -22,6 +23,9 @@ def plot_stacked_proportions(prop_2d, prop_neither, prop_1d, title, ax=None, sho
         Axes to plot on, creates new figure if None
     show_legend : bool
         Whether to show legend
+    ci_2d, ci_1d : list of tuples, optional
+        Confidence intervals for 2D and 1D proportions. Each should be a list of 
+        (lower, upper) tuples, one for each bar.
         
     Returns:
     --------
@@ -40,6 +44,28 @@ def plot_stacked_proportions(prop_2d, prop_neither, prop_1d, title, ax=None, sho
     ax.bar(x, prop_neither, bottom=prop_1d, color='white', label='Neither', edgecolor='black')
     ax.bar(x, prop_2d, bottom=[prop_1d[i] + prop_neither[i] for i in range(len(prop_2d))], 
            color='C1', label='2D', edgecolor='black')
+    
+    # Add confidence interval error bars
+    if ci_1d is not None:
+        # Position error bars at center of 1D bars
+        y_1d = [prop_1d[i] / 2 for i in range(len(prop_1d))]
+        yerr_1d = [[y_1d[i] - ci_1d[i][0], ci_1d[i][1] - y_1d[i]] for i in range(len(prop_1d))]
+        yerr_1d = np.array(yerr_1d).T  # Transpose for matplotlib format
+        ax.errorbar(x, y_1d, yerr=yerr_1d, fmt='none', color='black', 
+                   capsize=3, capthick=1, linewidth=1)
+    
+    if ci_2d is not None:
+        # Position error bars at bottom of 2D bars (top of neither segment)
+        bottom_2d = [prop_1d[i] + prop_neither[i] for i in range(len(prop_2d))]
+        y_2d = bottom_2d  # Position at bottom edge of 2D bars
+        
+        # Error bars show CI for the 2D proportion, positioned at the bottom of the 2D segment
+        yerr_lower = [prop_2d[i] - ci_2d[i][0] for i in range(len(prop_2d))]  # How far down from baseline
+        yerr_upper = [ci_2d[i][1] - prop_2d[i] for i in range(len(prop_2d))]  # How far up from baseline  
+        yerr_2d = [yerr_lower, yerr_upper]
+        
+        ax.errorbar(x, y_2d, yerr=yerr_2d, fmt='none', color='black',
+                   capsize=3, capthick=1, linewidth=1)
     
     # Add a dashed vertical line between L4 and T1
     if len(x) > 4:  # Make sure we have at least 5 blocks (L1-L4 + T1)
@@ -145,7 +171,7 @@ def create_drule_proportions_bar_plot(results_df):
     return fig
 
 
-def create_first_test_overview_plot(test_results_df):
+def create_first_test_overview_plot(test_results_df, show_cis=False):
     """
     Create overview plot showing first test phase decision rule proportions 
     across all datasets for all participants.
@@ -154,6 +180,8 @@ def create_first_test_overview_plot(test_results_df):
     -----------
     test_results_df : pandas.DataFrame
         DataFrame containing test proportion data
+    show_cis : bool, optional
+        Whether to show confidence intervals on the bars (default: False)
         
     Returns:
     --------
@@ -180,6 +208,8 @@ def create_first_test_overview_plot(test_results_df):
     prop_1d_values = []
     prop_neither_values = []
     n_values = []
+    ci_2d_values = []
+    ci_1d_values = []
     
     for dataset in PUBLICATION_DATASETS:
         dataset_data = first_test_data[first_test_data['dataset'] == dataset]
@@ -191,6 +221,11 @@ def create_first_test_overview_plot(test_results_df):
             prop_1d_values.append(row['prop_1d'])
             prop_neither_values.append(row['prop_neither'])
             n_values.append(row['N'])
+            
+            # Extract CIs if requested
+            if show_cis:
+                ci_2d_values.append((row['ci_2d_lower'], row['ci_2d_upper']))
+                ci_1d_values.append((row['ci_1d_lower'], row['ci_1d_upper']))
     
     # Create x positions for bars with reduced spacing
     x_spacing = 0.8
@@ -202,6 +237,64 @@ def create_first_test_overview_plot(test_results_df):
     ax.bar(x, prop_neither_values, bottom=prop_1d_values, width=bar_width, color='white', label='Neither', edgecolor='black')
     ax.bar(x, prop_2d_values, bottom=[prop_1d_values[i] + prop_neither_values[i] for i in range(len(prop_2d_values))], 
            width=bar_width, color='C1', label='2D', edgecolor='black')
+    
+    # Add confidence interval error bars if requested
+    if show_cis and ci_1d_values and ci_2d_values:
+        # Check for overlap between 1D and 2D CIs for each bar
+        x_1d = []
+        x_2d = []
+        for i in range(len(prop_1d_values)):
+            # 1D CI upper bound (in absolute position)
+            ci_1d_upper = ci_1d_values[i][1]
+            # 2D CI lower bound (in absolute position from bottom of bar)
+            bottom_2d_pos = prop_1d_values[i] + prop_neither_values[i]
+            ci_2d_lower_abs = bottom_2d_pos - (ci_2d_values[i][1] - prop_2d_values[i])
+            
+            # Check if they overlap: 1D upper extends into 2D lower region
+            if ci_1d_upper > ci_2d_lower_abs:
+                # Apply offset to avoid overlap
+                x_1d.append(x[i] - 0.05)
+                x_2d.append(x[i] + 0.05)
+            else:
+                # No overlap, use original x position
+                x_1d.append(x[i])
+                x_2d.append(x[i])
+        
+        # Plot 1D CIs
+        y_1d = [prop_1d_values[i] / 2 for i in range(len(prop_1d_values))]
+        yerr_1d = [[y_1d[i] - ci_1d_values[i][0], ci_1d_values[i][1] - y_1d[i]] for i in range(len(prop_1d_values))]
+        yerr_1d = np.array(yerr_1d).T  # Transpose for matplotlib format
+        ax.errorbar(x_1d, y_1d, yerr=yerr_1d, fmt='none', color='black', 
+                   capsize=3, capthick=1, linewidth=1)
+        
+        # Plot 2D CIs
+        bottom_2d = [prop_1d_values[i] + prop_neither_values[i] for i in range(len(prop_2d_values))]
+        y_2d = bottom_2d  # Position at bottom edge of 2D bars
+        
+        # Error bars show CI for the 2D proportion, positioned at the bottom of the 2D segment
+        yerr_lower = [ci_2d_values[i][1] - prop_2d_values[i] for i in range(len(prop_2d_values))]  # Use CI upper for downward extension
+        yerr_upper = [prop_2d_values[i] - ci_2d_values[i][0] for i in range(len(prop_2d_values))]  # Use CI lower for upward extension
+        yerr_2d = [yerr_lower, yerr_upper]
+        
+        ax.errorbar(x_2d, y_2d, yerr=yerr_2d, fmt='none', color='black',
+                   capsize=3, capthick=1, linewidth=1)
+    elif show_cis:
+        # Handle case where only one CI type is available
+        if ci_1d_values:
+            y_1d = [prop_1d_values[i] / 2 for i in range(len(prop_1d_values))]
+            yerr_1d = [[y_1d[i] - ci_1d_values[i][0], ci_1d_values[i][1] - y_1d[i]] for i in range(len(prop_1d_values))]
+            yerr_1d = np.array(yerr_1d).T
+            ax.errorbar(x, y_1d, yerr=yerr_1d, fmt='none', color='black', 
+                       capsize=3, capthick=1, linewidth=1)
+        
+        if ci_2d_values:
+            bottom_2d = [prop_1d_values[i] + prop_neither_values[i] for i in range(len(prop_2d_values))]
+            y_2d = bottom_2d
+            yerr_lower = [ci_2d_values[i][1] - prop_2d_values[i] for i in range(len(prop_2d_values))]  # Use CI upper for downward extension
+            yerr_upper = [prop_2d_values[i] - ci_2d_values[i][0] for i in range(len(prop_2d_values))]  # Use CI lower for upward extension
+            yerr_2d = [yerr_lower, yerr_upper]
+            ax.errorbar(x, y_2d, yerr=yerr_2d, fmt='none', color='black',
+                       capsize=3, capthick=1, linewidth=1)
     
     # Create x-tick labels with N values
     xtick_labels = []
@@ -230,7 +323,7 @@ def create_first_test_overview_plot(test_results_df):
 def get_significance_stars(p_value):
     """
     Convert p-value to significance asterisks.
-    
+    it 
     Parameters:
     -----------
     p_value : float or None
@@ -252,7 +345,7 @@ def get_significance_stars(p_value):
         return ""
 
 
-def create_trapped_learner_comparison_plot(test_results_df):
+def create_trapped_learner_comparison_plot(test_results_df, show_cis=False):
     """
     Create comparison plot showing trapped learner decision rule proportions
     for baseline (T1) vs different partner conditions (T2).
@@ -293,6 +386,8 @@ def create_trapped_learner_comparison_plot(test_results_df):
         prop_1d_values = []
         prop_neither_values = []
         n_values = []
+        ci_2d_values = []
+        ci_1d_values = []
         
         for condition in conditions:
             if condition == 'baseline':
@@ -318,11 +413,21 @@ def create_trapped_learner_comparison_plot(test_results_df):
                     prop_1d_values.append(prop_1d)
                     prop_neither_values.append(prop_neither)
                     n_values.append(total_n)
+                    
+                    # No CIs for baseline (aggregated data)
+                    if show_cis:
+                        ci_2d_values.append(None)
+                        ci_1d_values.append(None)
                 else:
                     prop_2d_values.append(0)
                     prop_1d_values.append(0)
                     prop_neither_values.append(0)
                     n_values.append(0)
+                    
+                    # No CIs for missing baseline data
+                    if show_cis:
+                        ci_2d_values.append(None)
+                        ci_1d_values.append(None)
             else:
                 # For T2 conditions, use second_gen proportions
                 condition_data = dataset_data[
@@ -336,11 +441,21 @@ def create_trapped_learner_comparison_plot(test_results_df):
                     prop_1d_values.append(row['prop_1d'])
                     prop_neither_values.append(row['prop_neither'])
                     n_values.append(row['N'])
+                    
+                    # Extract CIs for T2 conditions if requested
+                    if show_cis:
+                        ci_2d_values.append((row['ci_2d_lower'], row['ci_2d_upper']))
+                        ci_1d_values.append((row['ci_1d_lower'], row['ci_1d_upper']))
                 else:
                     prop_2d_values.append(0)
                     prop_1d_values.append(0)
                     prop_neither_values.append(0)
                     n_values.append(0)
+                    
+                    # No CIs for missing T2 data
+                    if show_cis:
+                        ci_2d_values.append(None)
+                        ci_1d_values.append(None)
         
         # Create x positions for bars with reduced spacing
         x_spacing = 0.8
@@ -352,6 +467,67 @@ def create_trapped_learner_comparison_plot(test_results_df):
         ax.bar(x, prop_neither_values, bottom=prop_1d_values, width=bar_width, color='white', label='Neither', edgecolor='black')
         ax.bar(x, prop_2d_values, bottom=[prop_1d_values[i] + prop_neither_values[i] for i in range(len(prop_2d_values))], 
                width=bar_width, color='C1', label='2D', edgecolor='black')
+        
+        # Add confidence interval error bars if requested
+        if show_cis and ci_1d_values and ci_2d_values:
+            # Check for overlap between 1D and 2D CIs for each bar (skip baseline)
+            x_1d = []
+            x_2d = []
+            valid_1d_cis = []
+            valid_2d_cis = []
+            valid_1d_props = []
+            valid_2d_props = []
+            valid_neither_props = []
+            
+            for i in range(len(prop_1d_values)):
+                # Skip baseline (no CIs) and bars with no CI data
+                if conditions[i] == 'baseline' or ci_1d_values[i] is None or ci_2d_values[i] is None:
+                    continue
+                
+                # 1D CI upper bound (in absolute position)
+                ci_1d_upper = ci_1d_values[i][1]
+                # 2D CI lower bound (in absolute position from bottom of bar)
+                bottom_2d_pos = prop_1d_values[i] + prop_neither_values[i]
+                ci_2d_lower_abs = bottom_2d_pos - (ci_2d_values[i][1] - prop_2d_values[i])
+                
+                # Check if they overlap: 1D upper extends into 2D lower region
+                if ci_1d_upper > ci_2d_lower_abs:
+                    # Apply offset to avoid overlap
+                    x_1d.append(x[i] - 0.05)
+                    x_2d.append(x[i] + 0.05)
+                else:
+                    # No overlap, use original x position
+                    x_1d.append(x[i])
+                    x_2d.append(x[i])
+                
+                # Store valid data for plotting
+                valid_1d_cis.append(ci_1d_values[i])
+                valid_2d_cis.append(ci_2d_values[i])
+                valid_1d_props.append(prop_1d_values[i])
+                valid_2d_props.append(prop_2d_values[i])
+                valid_neither_props.append(prop_neither_values[i])
+            
+            if valid_1d_cis:
+                # Plot 1D CIs
+                y_1d = [valid_1d_props[i] / 2 for i in range(len(valid_1d_props))]
+                yerr_1d = [[y_1d[i] - valid_1d_cis[i][0], valid_1d_cis[i][1] - y_1d[i]] for i in range(len(valid_1d_props))]
+                yerr_1d = np.array(yerr_1d).T  # Transpose for matplotlib format
+                ax.errorbar(x_1d, y_1d, yerr=yerr_1d, fmt='none', color='black', 
+                           capsize=3, capthick=1, linewidth=1)
+            
+            if valid_2d_cis:
+                # Plot 2D CIs
+                bottom_2d = [valid_1d_props[i] + valid_neither_props[i] for i in range(len(valid_2d_props))]
+                y_2d = bottom_2d  # Position at bottom edge of 2D bars
+                
+                # Error bars show CI for the 2D proportion, positioned at the bottom of the 2D segment
+                # Apply corrected logic: yerr_lower uses CI_upper, yerr_upper uses CI_lower
+                yerr_lower = [valid_2d_cis[i][1] - valid_2d_props[i] for i in range(len(valid_2d_props))]  # Use CI upper for downward extension
+                yerr_upper = [valid_2d_props[i] - valid_2d_cis[i][0] for i in range(len(valid_2d_props))]  # Use CI lower for upward extension
+                yerr_2d = [yerr_lower, yerr_upper]
+                
+                ax.errorbar(x_2d, y_2d, yerr=yerr_2d, fmt='none', color='black',
+                           capsize=3, capthick=1, linewidth=1)
         
         # Add significance asterisks for conditions vs asocial (excluding baseline)
         for i, condition in enumerate(conditions):
@@ -578,9 +754,9 @@ def main():
         
         print(f"Loaded {len(test_results_df)} rows of test proportion data")
         
-        # Create the first test overview figure
-        print("Creating first test phase overview plot...")
-        first_test_fig = create_first_test_overview_plot(test_results_df)
+        # Create the first test overview figure WITHOUT CIs
+        print("Creating first test phase overview plot (without CIs)...")
+        first_test_fig = create_first_test_overview_plot(test_results_df, show_cis=False)
         
         # Save the first test figure in both SVG and PDF formats
         first_test_svg_path = 'outputs/first_test_overview.svg'
@@ -590,9 +766,21 @@ def main():
         first_test_fig.savefig(first_test_pdf_path, bbox_inches='tight', transparent=True)
         plt.close(first_test_fig)
         
-        # Create the trapped learner comparison figure
-        print("Creating trapped learner comparison plot...")
-        trapped_learner_fig = create_trapped_learner_comparison_plot(test_results_df)
+        # Create the first test overview figure WITH CIs
+        print("Creating first test phase overview plot (with CIs)...")
+        first_test_fig_ci = create_first_test_overview_plot(test_results_df, show_cis=True)
+        
+        # Save the first test figure with CIs in both SVG and PDF formats
+        first_test_ci_svg_path = 'outputs/first_test_overview_with_cis.svg'
+        first_test_ci_pdf_path = 'outputs/first_test_overview_with_cis.pdf'
+        print(f"Saving first test overview figure with CIs to {first_test_ci_svg_path} and {first_test_ci_pdf_path}")
+        first_test_fig_ci.savefig(first_test_ci_svg_path, bbox_inches='tight', transparent=True)
+        first_test_fig_ci.savefig(first_test_ci_pdf_path, bbox_inches='tight', transparent=True)
+        plt.close(first_test_fig_ci)
+        
+        # Create the trapped learner comparison figure (without CIs)
+        print("Creating trapped learner comparison plot (without CIs)...")
+        trapped_learner_fig = create_trapped_learner_comparison_plot(test_results_df, show_cis=False)
         
         # Save the trapped learner figure in both SVG and PDF formats
         trapped_learner_svg_path = 'outputs/trapped_learner_comparison.svg'
@@ -601,6 +789,18 @@ def main():
         trapped_learner_fig.savefig(trapped_learner_svg_path, bbox_inches='tight', transparent=True)
         trapped_learner_fig.savefig(trapped_learner_pdf_path, bbox_inches='tight', transparent=True)
         plt.close(trapped_learner_fig)
+        
+        # Create the trapped learner comparison figure (with CIs)
+        print("Creating trapped learner comparison plot (with CIs)...")
+        trapped_learner_fig_ci = create_trapped_learner_comparison_plot(test_results_df, show_cis=True)
+        
+        # Save the trapped learner figure with CIs in both SVG and PDF formats
+        trapped_learner_ci_svg_path = 'outputs/trapped_learner_comparison_with_cis.svg'
+        trapped_learner_ci_pdf_path = 'outputs/trapped_learner_comparison_with_cis.pdf'
+        print(f"Saving trapped learner comparison figure with CIs to {trapped_learner_ci_svg_path} and {trapped_learner_ci_pdf_path}")
+        trapped_learner_fig_ci.savefig(trapped_learner_ci_svg_path, bbox_inches='tight', transparent=True)
+        trapped_learner_fig_ci.savefig(trapped_learner_ci_pdf_path, bbox_inches='tight', transparent=True)
+        plt.close(trapped_learner_fig_ci)
         
         # Create the original test figure (for reference)
         print("Creating original test decision rule proportions bar plot...")

@@ -1,6 +1,6 @@
 DECISION RULE PROPORTIONS ANALYSIS
 ==================================================
-Generated: 2025-09-15 10:30:59
+Generated: 2025-09-16 18:50:30
 
 DESCRIPTION:
 --------------------
@@ -17,6 +17,9 @@ DATA STRUCTURE:
 - prop_1d: Proportion using 1D decision rule
 - prop_neither: Proportion using neither rule consistently
 - N: Number of participants in this condition/dataset
+- ci_2d_lower/upper: 95% confidence interval bounds for 2D proportion
+- ci_1d_lower/upper: 95% confidence interval bounds for 1D proportion
+- ci_neither_lower/upper: 95% confidence interval bounds for neither proportion
 
 CONDITIONS:
 --------------------
@@ -46,6 +49,14 @@ dataset
 5           44        0    192        21
 6            0       32     93         0
 sim        159      152   1000       159
+
+CONFIDENCE INTERVALS SUMMARY (selected examples):
+--------------------
+Sample confidence intervals from sim dataset, 2d condition:
+Block 0 (N=159): 2D=0.208 [0.138, 0.283], 1D=0.327 [0.245, 0.415]
+Block 1 (N=159): 2D=0.742 [0.660, 0.818], 1D=0.000 [0.000, 0.000]
+Block 2 (N=159): 2D=0.981 [0.956, 1.000], 1D=0.000 [0.000, 0.000]
+Block 3 (N=159): 2D=1.000 [1.000, 1.000], 1D=0.000 [0.000, 0.000]
 
 SOURCE DATA:
 --------------------
